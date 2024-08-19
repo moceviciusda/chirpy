@@ -1,7 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"net/http"
+)
 
 func main() {
-	fmt.Println("hello World")
+	const port = "8080"
+
+	server := &http.Server{
+		Addr:    "localhost:" + port,
+		Handler: http.NewServeMux(),
+	}
+
+	server.ListenAndServe()
 }
