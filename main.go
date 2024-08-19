@@ -46,15 +46,9 @@ func main() {
 	handler.Handle("/app/", config.middlewareMetricsInc(fileServerHandler))
 
 	handler.HandleFunc("GET /admin/metrics", config.metricsHandler)
+	handler.HandleFunc("/admin/reset", config.resetHandler)
 
-	handler.HandleFunc("/api/reset", config.resetHandler)
-
-	handler.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(http.StatusText(http.StatusOK)))
-	})
-
+	handler.HandleFunc("GET /api/healthz", healthz)
 	handler.HandleFunc("POST /api/validate_chirp", validateChirp)
 
 	server := &http.Server{
