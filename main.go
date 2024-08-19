@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/moceviciusda/chirpy/internal/database"
 )
 
@@ -43,15 +44,21 @@ func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	const port = "8080"
-	const dbPath = "database.json"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Failed to load .env")
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	host := os.Getenv("HOST")
+	dbPath := os.Getenv("DB_PATH")
 
 	db, err := database.NewDB(dbPath)
 	if err != nil {
 		log.Fatal("Failed to initialize DB")
 	}
 
-	config := apiConfig{db, os.Getenv("JWT_SECRET"), 0}
+	config := apiConfig{db, jwtSecret, 0}
 
 	handler := http.NewServeMux()
 
@@ -72,7 +79,7 @@ func main() {
 	handler.HandleFunc("GET /api/chirps/{chirpID}", config.getChirpById)
 
 	server := &http.Server{
-		Addr:    "localhost:" + port,
+		Addr:    host,
 		Handler: handler,
 	}
 
