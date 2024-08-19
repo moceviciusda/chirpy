@@ -2,6 +2,7 @@ package database
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"sync"
 )
@@ -70,17 +71,21 @@ func (db *DB) ensureDB() error {
 	defer db.mutex.RUnlock()
 
 	_, err := os.ReadFile(db.path)
-	if err == os.ErrNotExist {
+	if os.IsNotExist(err) {
+		log.Println("DB not found. Initializing DB")
 		contents := DBStructure{map[int]Chirp{}}
 		data, err := json.Marshal(&contents)
 		if err != nil {
 			return err
 		}
 
-		db.mutex.Lock()
-		os.WriteFile(db.path, data, 0666)
-		defer db.mutex.Unlock()
+		err = os.WriteFile(db.path, data, 0666)
+		if err != nil {
+			return err
+		}
 	}
+
+	log.Println("Connected to DB")
 
 	return nil
 }

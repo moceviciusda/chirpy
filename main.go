@@ -2,10 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+
+	"github.com/moceviciusda/chirpy/internal/database"
 )
 
 type apiConfig struct {
+	db             *database.DB
 	fileserverHits int
 }
 
@@ -38,7 +42,14 @@ func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	const port = "8080"
-	config := apiConfig{}
+	const dbPath = "database.json"
+
+	db, err := database.NewDB(dbPath)
+	if err != nil {
+		log.Fatal("Failed to initialize DB")
+	}
+
+	config := apiConfig{db, 0}
 
 	handler := http.NewServeMux()
 
