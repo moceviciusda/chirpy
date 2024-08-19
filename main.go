@@ -61,6 +61,8 @@ func main() {
 
 	handler.HandleFunc("GET /api/healthz", healthz)
 
+	handler.HandleFunc("POST /api/login", config.login)
+
 	handler.HandleFunc("POST /api/users", config.postUser)
 
 	handler.HandleFunc("POST /api/chirps", config.postChirp)
