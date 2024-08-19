@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/moceviciusda/chirpy/internal/database"
 )
 
 type apiConfig struct {
 	db             *database.DB
+	JWT_SECRET     string
 	fileserverHits int
 }
 
@@ -49,7 +51,7 @@ func main() {
 		log.Fatal("Failed to initialize DB")
 	}
 
-	config := apiConfig{db, 0}
+	config := apiConfig{db, os.Getenv("JWT_SECRET"), 0}
 
 	handler := http.NewServeMux()
 

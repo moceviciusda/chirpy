@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/moceviciusda/chirpy/internal/database"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -15,6 +17,12 @@ import (
 type postUserReq struct {
 	Password string `json:"password"`
 	Email    string `json:"email"`
+}
+
+type loginReq struct {
+	Password         string `json:"password"`
+	Email            string `json:"email"`
+	ExpiresInSeconds int    `json:"expires_in_seconds"`
 }
 
 type postChirpReq struct {
@@ -29,7 +37,7 @@ func (cfg *apiConfig) login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	decoder := json.NewDecoder(r.Body)
-	reqBody := postUserReq{}
+	reqBody := loginReq{}
 
 	err := decoder.Decode(&reqBody)
 	if err != nil {
@@ -57,7 +65,31 @@ func (cfg *apiConfig) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := json.Marshal(database.UserWithoutPassword{Id: user.Id, Email: user.Email})
+	var expiresIn time.Duration
+	if reqBody.ExpiresInSeconds == 0 || reqBody.ExpiresInSeconds > 24*3600 {
+		expiresIn = time.Hour * 24
+	} else {
+		expiresIn = time.Second * time.Duration(reqBody.ExpiresInSeconds)
+	}
+
+	issuedAt := time.Now().UTC()
+	expiresAt := issuedAt.Add(expiresIn)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer:    "chirpy",
+		IssuedAt:  jwt.NewNumericDate(issuedAt),
+		ExpiresAt: jwt.NewNumericDate(expiresAt),
+		Subject:   strconv.Itoa(user.Id),
+	})
+
+	signedT, err := token.SignedString([]byte(cfg.JWT_SECRET))
+	if err != nil {
+		w.WriteHeader(500)
+		log.Printf("Error marshalling JSON: %s", err)
+		return
+	}
+
+	data, err := json.Marshal(database.UserWithoutPassword{Id: user.Id, Email: user.Email, Token: signedT})
 	if err != nil {
 		w.WriteHeader(500)
 		log.Printf("Error marshalling JSON: %s", err)
@@ -104,6 +136,10 @@ func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(201)
 	w.Write(data)
+}
+
+func (cfg *apiConfig) putUser(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {

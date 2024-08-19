@@ -15,6 +15,7 @@ type User struct {
 type UserWithoutPassword struct {
 	Id    int    `json:"id"`
 	Email string `json:"email"`
+	Token string `json:"token"`
 }
 
 func (db *DB) CreateUser(email, password string) (UserWithoutPassword, error) {
@@ -44,8 +45,12 @@ func (db *DB) CreateUser(email, password string) (UserWithoutPassword, error) {
 		return UserWithoutPassword{}, err
 	}
 
-	return UserWithoutPassword{user.Id, user.Email}, nil
+	return UserWithoutPassword{user.Id, user.Email, ""}, nil
 }
+
+// func (db *DB) UpdateUser(email, password string) (UserWithoutPassword, error) {
+
+// }
 
 func (db *DB) GetUserByEmail(email string) (User, error) {
 	dbStruct, err := db.loadDB()
