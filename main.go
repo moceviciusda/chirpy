@@ -60,6 +60,9 @@ func main() {
 	handler.HandleFunc("/admin/reset", config.resetHandler)
 
 	handler.HandleFunc("GET /api/healthz", healthz)
+
+	handler.HandleFunc("POST /api/users", config.postUser)
+
 	handler.HandleFunc("POST /api/chirps", config.postChirp)
 	handler.HandleFunc("GET /api/chirps", config.getChirps)
 	handler.HandleFunc("GET /api/chirps/{chirpID}", config.getChirpById)

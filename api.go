@@ -9,7 +9,11 @@ import (
 	"strings"
 )
 
-type reqBody struct {
+type postUserReq struct {
+	Email string `json:"email"`
+}
+
+type postChirpReq struct {
 	Body string `json:"body"`
 }
 
@@ -17,11 +21,49 @@ type errorBody struct {
 	Error string `json:"error"`
 }
 
-func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	reqBody := reqBody{}
-
+func (cfg *apiConfig) postUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	decoder := json.NewDecoder(r.Body)
+	reqBody := postUserReq{}
+
+	err := decoder.Decode(&reqBody)
+	if err != nil {
+		w.WriteHeader(500)
+		respBody := errorBody{fmt.Sprintf("error decoding request body: %s", err)}
+		data, err := json.Marshal(respBody)
+		if err != nil {
+			log.Printf("error marshalling JSON: %s", err)
+			return
+		}
+
+		w.Write(data)
+		return
+	}
+
+	user, err := cfg.db.CreateUser(reqBody.Email)
+	if err != nil {
+		w.WriteHeader(500)
+		log.Printf("Failed to save user: %s", err)
+		return
+	}
+
+	data, err := json.Marshal(user)
+	if err != nil {
+		w.WriteHeader(500)
+		log.Printf("Error marshalling JSON: %s", err)
+		return
+	}
+
+	w.WriteHeader(201)
+	w.Write(data)
+}
+
+func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	decoder := json.NewDecoder(r.Body)
+	reqBody := postChirpReq{}
 
 	err := decoder.Decode(&reqBody)
 	if err != nil {
