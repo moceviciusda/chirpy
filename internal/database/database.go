@@ -2,6 +2,7 @@ package database
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -17,8 +18,8 @@ type DBStructure struct {
 }
 
 type Chirp struct {
-	id   int
-	body string
+	Id   int    `json:"id"`
+	Body string `json:"body"`
 }
 
 func NewDB(path string) (*DB, error) {
@@ -60,10 +61,24 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 
 	chirps := make([]Chirp, len(dbStruct.Chirps))
 	for _, chirp := range dbStruct.Chirps {
-		chirps[chirp.id-1] = chirp
+		chirps[chirp.Id-1] = chirp
 	}
 
 	return chirps, nil
+}
+
+func (db *DB) GetChirp(id int) (Chirp, error) {
+	dbStruct, err := db.loadDB()
+	if err != nil {
+		return Chirp{}, err
+	}
+
+	chirp, ok := dbStruct.Chirps[id]
+	if !ok {
+		return chirp, fmt.Errorf("chirp does not exist. ID: %v", id)
+	}
+
+	return chirp, nil
 }
 
 func (db *DB) ensureDB() error {

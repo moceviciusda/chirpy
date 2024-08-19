@@ -60,7 +60,9 @@ func main() {
 	handler.HandleFunc("/admin/reset", config.resetHandler)
 
 	handler.HandleFunc("GET /api/healthz", healthz)
-	handler.HandleFunc("POST /api/validate_chirp", validateChirp)
+	handler.HandleFunc("POST /api/chirps", config.postChirp)
+	handler.HandleFunc("GET /api/chirps", config.getChirps)
+	handler.HandleFunc("GET /api/chirps/{chirpID}", config.getChirpById)
 
 	server := &http.Server{
 		Addr:    "localhost:" + port,

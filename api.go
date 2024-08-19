@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -16,11 +17,7 @@ type errorBody struct {
 	Error string `json:"error"`
 }
 
-type cleanedBody struct {
-	CleanedBody string `json:"cleaned_body"`
-}
-
-func validateChirp(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) postChirp(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	reqBody := reqBody{}
 
@@ -62,14 +59,72 @@ func validateChirp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	respBody := cleanedBody{strings.Join(words, " ")}
-	data, err := json.Marshal(respBody)
+	body := strings.Join(words, " ")
+
+	chirp, err := cfg.db.CreateChirp(body)
+	if err != nil {
+		w.WriteHeader(500)
+		log.Printf("Failed to save chirp: %s", err)
+		return
+	}
+
+	data, err := json.Marshal(chirp)
 	if err != nil {
 		w.WriteHeader(500)
 		log.Printf("Error marshalling JSON: %s", err)
 		return
 	}
 
+	w.WriteHeader(201)
+	w.Write(data)
+}
+
+func (cfg *apiConfig) getChirps(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	chirps, err := cfg.db.GetChirps()
+	if err != nil {
+		w.WriteHeader(500)
+		log.Printf("Error getting chirps: %s", err)
+		return
+	}
+
+	data, err := json.Marshal(chirps)
+	if err != nil {
+		w.WriteHeader(500)
+		log.Printf("Error marshalling JSON: %s", err)
+		return
+	}
+
+	w.WriteHeader(200)
+	w.Write(data)
+}
+
+func (cfg *apiConfig) getChirpById(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	chirpID, err := strconv.Atoi(r.PathValue("chirpID"))
+	if err != nil {
+		w.WriteHeader(500)
+		log.Printf("Invalid chirp ID: %s", r.PathValue("chirpID"))
+		return
+	}
+
+	chirp, err := cfg.db.GetChirp(chirpID)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		log.Println(err.Error())
+		return
+	}
+
+	data, err := json.Marshal(chirp)
+	if err != nil {
+		w.WriteHeader(500)
+		log.Printf("Error marshalling JSON: %s", err)
+		return
+	}
+
+	w.WriteHeader(200)
 	w.Write(data)
 }
 
